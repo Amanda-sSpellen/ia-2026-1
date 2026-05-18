@@ -6,20 +6,19 @@
 % backliteral(+p(V1,…,Vn),[V1,…,Vn])
 % says that the literal of the form p(V1,…,Vn), with variables
 % V1,…,Vn possibly renamed, are part of the hypothesis language.
-  
-backliteral([atom(X), parent(X,Y)],[X,Y]).
+
+backliteral(parent(X,Y),[X,Y]).
 backliteral(male(X),[X]).
 backliteral(female(X),[X]).
 
 % The relevant background predicates are: % new
-backliteral([atom(X), predecessor(X, Y)], [Χ,Υ]).
+backliteral(predecessor(X, Y), [Χ,Υ]).
 
 prolog_predicate(male(_)).
 prolog_predicate(female(_)).
 
 % The relevant background predicates are: %new
 prolog_predicate(parent(X,Y)).
-prolog_predicate(atom(X)).
 
 %———————————————————————————————————————————————
 parent(pam, bob).
@@ -51,7 +50,7 @@ female(eve).
 
 %———————————————————————————————————————————————
 % Negative examples
-%nex(+Example): +Example is a 
+%nex(+Example): +Example is a
 % nex(has_daughter(pam)).
 % nex(has_daughter(jim)).
 
@@ -77,9 +76,9 @@ nex(predecessor( pam, liz)).
 nex(predecessor(liz, jim)).
 nex(predecessor(liz, liz)).
 
-% 'Guessing' that our target hypothesis comprises two clauses, 
+% 'Guessing' that our target hypothesis comprises two clauses,
 % we may define a start hypothesis as:
-start_hyp([[predecessor(X1,Y1)]/[X1,Y1], 
+start_hyp([[predecessor(X1,Y1)]/[X1,Y1],
           [predecessor(X2,Y2)]/[X2,Y2]]).
 
 %———————————————————————————————————————————————
@@ -90,10 +89,10 @@ start_hyp([[predecessor(X1,Y1)]/[X1,Y1],
 prove(Goal, Hypo, Answer):-
     max_proof_length(D),
     prove(Goal, Hypo, D, RestD),
-    (RestD >= 0, Answer = yes		% Proved
-     ;				     
-     RestD < 0, Answer = maybe).	% Maybe, but it looks like inf. loop
-prove(Goal, _, no).			% Otherwise goal definitely cannot be proved
+    (RestD >= 0, Answer = yes           % Proved
+     ;
+     RestD < 0, Answer = maybe).        % Maybe, but it looks like inf. loop
+prove(Goal, _, no).                     % Otherwise goal definitely cannot be proved
 
 
 %———————————————————————————————————————————————
@@ -146,14 +145,14 @@ depth_first(Hyp0,Hyp,MaxD0):-
     depth_first(Hyp1,Hyp,MaxD1).
 
 complete(Hyp):-
-    not(ex(E),				% A positive example
-        once(prove(E, Hyp, Answer)),	% Prove it with Hyp
-        Answer \== yes).		% possibly provable
+    not(ex(E),                          % A positive example
+        once(prove(E, Hyp, Answer)),    % Prove it with Hyp
+        Answer \== yes).                % possibly provable
 
 consistent(Hyp):-
-    not(nex(E),				% A negative example
-        once(prove(E, Hyp, Answer)),	% Prove it with Hyp
-        Answer \== no).			% possibly provable
+    not(nex(E),                         % A negative example
+        once(prove(E, Hyp, Answer)),    % Prove it with Hyp
+        Answer \== no).                 % possibly provable
 
 refine_hyp(Hyp0,Hyp):-
     append(Clauses1,[Clause0/Vars0 | Clauses2], Hyp0),
