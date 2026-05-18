@@ -6,20 +6,14 @@
 % backliteral(+p(V1,…,Vn),[V1,…,Vn])
 % says that the literal of the form p(V1,…,Vn), with variables
 % V1,…,Vn possibly renamed, are part of the hypothesis language.
-  
+
 backliteral(parent(X,Y),[X,Y]).
 backliteral(male(X),[X]).
 backliteral(female(X),[X]).
 
-% The relevant background predicates are: % new
-backliteral(predecessor(X, Y), [Χ,Υ]).
-
-% prolog_predicate(parent(_,_)).
+prolog_predicate(parent(_,_)).
 prolog_predicate(male(_)).
 prolog_predicate(female(_)).
-
-% The relevant background predicates are: %new
-prolog_predicate(parent(X,Y)).
 
 %———————————————————————————————————————————————
 parent(pam, bob).
@@ -45,84 +39,66 @@ female(eve).
 %———————————————————————————————————————————————
 % Positive examples
 % ex(+Example): +Example is a positive example
-% ex(has_daughter(tom)). %
-% ex(has_daughter(bob)).
+ex(has_daughter(tom)). %
+ex(has_daughter(bob)).
 % ex(has_daughter(pat)).
 
 %———————————————————————————————————————————————
 % Negative examples
-%nex(+Example): +Example is a 
-% nex(has_daughter(pam)).
-% nex(has_daughter(jim)).
+%nex(+Example): +Example is a
+nex(has_daughter(pam)).
+nex(has_daughter(jim)).
+nex(has_daughter(pat)). % % FORCE NEGATIVE: Pat has a daughter, but she's female
 
-% start_hyp([[has_daughter(X)]/[X]]).
+start_hyp([[has_daughter(X)]/[X]]).
 
 %not(P):-
 %    P, !, fail.
 %not(_).
 
 
-%———————————————————————————————————————————————
-% Exercise 21.1 % new
-
-ex(predecessor(pam, bob)).
-ex(predecessor( pam, jim)).
-ex(predecessor(tom, ann)).
-ex(predecessor(tom, jim)).
-ex(predecessor(tom, liz)).
-
-nex(predecessor(liz, bob)).
-nex(predecessor(pat, bob)).
-nex(predecessor( pam, liz)).
-nex(predecessor(liz, jim)).
-nex(predecessor(liz, liz)).
-
-% 'Guessing' that our target hypothesis comprises two clauses, 
-% we may define a start hypothesis as:
-start_hyp([[predecessor(X1,Y1)]/[X1,Y1], 
-          [predecessor(X2,Y2)]/[X2,Y2]]).
-
-%———————————————————————————————————————————————
-% Learning from family relations
-% prove(Goal, Hypo, Ans)
-%   Ans = yes …
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Program Mini-HYPER (Hypothesis Refiner) for learning ni logic
+% Coder: Edjard Mota
+% Date   : 14/05/2026
+% Source:  Prolog Programming for AI, Ivan Bratko,
+%          4th edition
+%          Chapter 21 - Inductive Logic Programming
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 prove(Goal, Hypo, Answer):-
     max_proof_length(D),
     prove(Goal, Hypo, D, RestD),
-    (RestD >= 0, Answer = yes		% Proved
-     ;				     
-     RestD < 0, Answer = maybe).	% Maybe, but it looks like inf. loop
-prove(Goal, _, no).			% Otherwise goal definitely cannot be proved
-
-
-%———————————————————————————————————————————————
-% prove(Goal, Hypo, MaxD, RestD)
+    (RestD >= 0, Answer = yes
+     ;
+     RestD < 0, Answer = maybe).
+prove(Goal, _, no).
 
 prove(G, H, D, D):-
-    D <0, !.
+    D < 0, !.
+
 prove([], _, D, D):- !.
-prove([G1|Gs],Hypo,D0,D):-
-    prove(G1,Hypo,D0,D1),
-    prove(Gs,Hypo,D1,D).
-% Manual dispatcher to avoid restricted call/1
-prove(G, _, D, D) :-
+prove([G1 | Gs], Hypo, D0, D):-
+    prove(G1, Hypo, D0, D1),
+    prove(Gs, Hypo, D1,D).
+
+prove(G, _, D, D):-
     prolog_predicate(G),
-    safe_call(G). % new. old: call(G).
-prove(G,Hypo,D0,D):-
+    call(G).
+prove(G, Hypo, D0, D):-
     D0 =< 0, !,
-    D is D0-1
+    D is D0 - 1
     ;
     D1 is D0 - 1,
     member(Clause/Vars, Hypo),
-    copy_term(Clause,[Head|Body]),
+    copy_term(Clause, [Head | Body]),
     G = Head,
-    prove(Body, Hypo,D1,D).
+    prove(Body, Hypo, D1, D).
+%———————————————————————————————————————————————
+% Learning from family relations
 
-% new
-safe_call(parent(X, Y)) :- parent(X, Y).
-safe_call(male(X))      :- male(X).
-safe_call(female(X))    :- female(X).
 %——————————————————————————————————————————————-——————————————-
 induce(Hyp):-
     iter_deep(Hyp,0).
@@ -146,14 +122,14 @@ depth_first(Hyp0,Hyp,MaxD0):-
     depth_first(Hyp1,Hyp,MaxD1).
 
 complete(Hyp):-
-    not(ex(E),				% A positive example
-        once(prove(E, Hyp, Answer)),	% Prove it with Hyp
-        Answer \== yes).		% possibly provable
+    not(ex(E),                          % A positive example
+        once(prove(E, Hyp, Answer)),    % Prove it with Hyp
+        Answer \== yes).                % possibly provable
 
 consistent(Hyp):-
-    not(nex(E),				% A negative example
-        once(prove(E, Hyp, Answer)),	% Prove it with Hyp
-        Answer \== no).			% possibly provable
+    not(nex(E),                         % A negative example
+        once(prove(E, Hyp, Answer)),    % Prove it with Hyp
+        Answer \== no).                 % possibly provable
 
 refine_hyp(Hyp0,Hyp):-
     append(Clauses1,[Clause0/Vars0 | Clauses2], Hyp0),
